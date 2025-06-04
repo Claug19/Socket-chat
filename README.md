@@ -25,13 +25,13 @@ Ensure you have GCC/make installed on your system: `sudo apt-get install build-e
 
 - Build: `make buildServer`
 - Build & Run: `make runServer`
-- Run with GDB (will cause display issue): `gdbServer`
+- Run with GDB (will cause display issue): `make gdbServer`
 
 **Client:**
 
 - Build: `make buildClient`
 - Build & Run: `make runClient`
-- Run with GDB (will cause display issue): `gdbClient`
+- Run with GDB (will cause display issue): `make gdbClient`
 
 ## **Utilization**
 
