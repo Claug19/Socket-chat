@@ -4,7 +4,7 @@
 
 The current project is a C++ implementation of a TCP socket based chat.
 It cotains a server instance and a client instance.
-In order to create a session for the chat, the server must run first and it should run at all times.
+In order to create a session for the chat, the server must run at all times since client-client connexion is not possible.
 
 ### TABLE OF CONTESTS
 
