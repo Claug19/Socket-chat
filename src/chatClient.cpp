@@ -158,9 +158,9 @@ void ChatInstance::receiveMessage() {
 		return;
 	}
 
-	mtx.lock();
+	mutex_.lock();
 	log(buffer);
-	mtx.unlock();
+	mutex_.unlock();
 
 	receiveMessage();
 }
@@ -236,7 +236,7 @@ void ChatInstance::sys_log(const std::string& message) {
 
 
 int main() {
-	ChatInstance* client = new ChatInstance();
+	std::unique_ptr<ChatInstance> client = std::make_unique<ChatInstance>();
 	client->startSocket();
 	return 0;
 }

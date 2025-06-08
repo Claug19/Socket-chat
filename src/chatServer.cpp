@@ -141,9 +141,7 @@ void ChatInstance::connectionAccepter() {
 	else {
 		sys_log("Connection accepted! File descriptor: " + std::to_string(clientFileDescriptor));
 
-		mtx.lock();
 		connections_.push_back(clientFileDescriptor);
-		mtx.unlock();
 
 		//  starts a listener thread for each connection
 		std::thread connectionThread(&ChatInstance::receiveMessage, this, clientFileDescriptor);
@@ -202,9 +200,9 @@ void ChatInstance::receiveMessage(const int connection) {
 		return;
 	}
 
-	mtx.lock();
+	mutex_.lock();
 	log(buffer);
-	mtx.unlock();
+	mutex_.unlock();
 
 	sendMessage(buffer);
 	receiveMessage(connection);
@@ -278,7 +276,7 @@ void ChatInstance::sys_log(const std::string& message) {
 
 
 int main() {
-	ChatInstance* server = new ChatInstance();
+	std::unique_ptr<ChatInstance> server = std::make_unique<ChatInstance>();
 	server->startSocket();
 	return 0;
 }

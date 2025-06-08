@@ -1,4 +1,12 @@
+#ifndef SOCKETCHAT_CHAT_CLIENT_HPP
+#define SOCKETCHAT_CHAT_CLIENT_HPP
+
+#ifdef SOCKETCHAT_HAS_PRAGMA_ONCE
+# pragma once
+#endif
+
 #include <iostream>
+#include <memory>
 #include <mutex>
 #include <string>
 #include <thread>
@@ -7,8 +15,6 @@
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
-
-std::mutex mtx;
 
 class ChatInstance {
 public:
@@ -59,4 +65,7 @@ private:
 	//  instance data
 	std::string user_;
 	std::vector<std::string> messages_;
+	std::mutex mutex_;
 };
+
+#endif //  #ifndef SOCKETCHAT_CHAT_CLIENT_HPP
