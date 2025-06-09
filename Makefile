@@ -4,6 +4,7 @@ BINPATH = bin
 BUILDPATH = build
 TESTINGPATH = Testing
 SOURCEPATH = .
+LOGPATH = logs
 
 define build
 	$(CXX) $(CXXFLAGS) src/$(1).cpp -o $(BINPATH)/$(1)
@@ -47,3 +48,5 @@ clean:
 	rm -rf $(BINPATH)
 	rm -rf $(BUILDPATH)
 	rm -rf $(TESTINGPATH)
+	rm -rf $(LOGPATH)
+	mkdir -p $(LOGPATH)

@@ -17,8 +17,14 @@
 #include <netinet/in.h>
 #include <sys/socket.h>
 
+#include "utils/logger.hpp"
+
 class ChatInstance {
 public:
+	ChatInstance() {
+		logger_ = Logger::getLogger(std::string("Server"));
+	}
+
 	//  socket methods
 	void startSocket();
 	void closeSocket();
@@ -48,14 +54,19 @@ private:
 	void updateDisplay();
 	void clearScreen();
 	void convertAddress(const std::string &address);
+	std::string addUserToMessage(const std::string& message);
+	std::string addSystemToMessage(const std::string& message);
 
 	// loggers
-	void log(const std::string& message);
-	void sys_log(const std::string& message);
+	void log(const ELogType type, const std::string& message);
+	void sysLog(const ELogType type, const std::string& message);
+	void logAndUpdate(const ELogType type, const std::string& message);
+	void sysLogAndUpdate(const ELogType type, const std::string& message);
+	void quickLog(const ELogType type, const std::string& message);
+	void quickSysLog(const ELogType type, const std::string& message);
 
 	//  flags
 	bool exitFlag_ = false;
-	bool instanceLoaded_ = false;
 
 	//  client socket data
 	std::vector<int> connections_;
@@ -70,6 +81,7 @@ private:
 	std::string user_;
 	std::vector<std::string> messages_;
 	std::mutex mutex_;
+	LoggerPtr logger_;
 };
 
 #endif //  #ifndef SOCKETCHAT_CHAT_SERVER_HPP

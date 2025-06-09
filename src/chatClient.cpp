@@ -21,7 +21,6 @@ void ChatInstance::startSocket() {
 	createSocket();
 	connectSocket();
 	connectionAccepter();
-	instanceLoaded_ = true;
 
 	//  instace
 	showInstance();
@@ -80,11 +79,11 @@ void ChatInstance::showInstance() {
 //  private
 //  socket methods
 void ChatInstance::createSocket() {
-	sys_log("Client socket setup..");
+	sysLog(INFO, "Client socket setup..");
 
 	sockFileDescriptor_ = socket(AF_INET, SOCK_STREAM, 0);
 	if (sockFileDescriptor_ < 0) {
-		std::cout << "Socket creation failed!\n";
+		quickSysLog(ERROR, "Socket creation failed!");
 		closeSocket();
 		exit(EXIT_FAILURE);
 	}
@@ -96,17 +95,20 @@ void ChatInstance::connectSocket() {
 	serverSocketAddress_.sin_addr.s_addr = serverAddress_;
 
 	if (connect(sockFileDescriptor_, (struct sockaddr *)&serverSocketAddress_, sizeof(serverSocketAddress_)) < 0) {
-		std::cout << "Connection failed!\n";
+		quickSysLog(ERROR, "Connection failed!");
 		closeSocket();
 		exit(EXIT_FAILURE);
 	};
 
-	sys_log("Socket initialized successfully!");
-	sys_log(
+	sysLog(INFO, "Socket initialized successfully!");
+	sysLog(INFO, 
 	    std::string("Address: ") + inet_ntoa(serverSocketAddress_.sin_addr) +
 	    "\tPort: " + std::to_string(ntohs(serverSocketAddress_.sin_port))
 	);
-	sendMessage("System: User \'" + user_ + "\' logged in");
+
+	const std::string userLogin = addSystemToMessage("User \'" + user_ + "\' logged in");
+	log(INFO, userLogin);
+	sendMessage(userLogin);
 }
 
 void ChatInstance::connectionAccepter() {
@@ -118,7 +120,7 @@ void ChatInstance::connectionAccepter() {
 void ChatInstance::disconnectSocket() {
 	closeSocket();
 	clearScreen();
-	std::cout << "Server socket disconnected.\n";
+	quickSysLog(INFO, "Server socket disconnected.");
 	exit(EXIT_SUCCESS);
 }
 
@@ -134,11 +136,11 @@ void ChatInstance::inputMessage() {
 	if (message[0] == '/') {
 		if (runCommand(message))
 			return;
-		sys_log("Invalid message or command");
+		sysLog(WARNING, "Invalid message or command");
 		return;
 	}
 
-	sendMessage(user_ + ": " + message);
+	sendMessage(addUserToMessage(message));
 }
 
 void ChatInstance::sendMessage(const std::string &message) {
@@ -159,7 +161,7 @@ void ChatInstance::receiveMessage() {
 	}
 
 	mutex_.lock();
-	log(buffer);
+	logAndUpdate(NONE, buffer);
 	mutex_.unlock();
 
 	receiveMessage();
@@ -168,7 +170,7 @@ void ChatInstance::receiveMessage() {
 bool ChatInstance::runCommand(const std::string &message) {
 	//  executes slash commands
 	if (message == "/exit") {
-		sendMessage("System: User \'" + user_ + "\' logged out");
+		sendMessage(addSystemToMessage("User \'" + user_ + "\' logged out"));
 		closeSocket();
 		clearScreen();
 		return true;
@@ -217,21 +219,43 @@ void ChatInstance::clearScreen() {
 
 void ChatInstance::convertAddress(const std::string &address) {
 	if (inet_pton(AF_INET, address.c_str(), &serverAddress_) <= 0) {
-		std::cout << "System: Invalid address/ Address not supported!\n";
+		quickSysLog(ERROR, "Invalid address/ Address not supported!");
 		exit(EXIT_FAILURE);
 	}
 }
 
+std::string ChatInstance::addUserToMessage(const std::string& message) {
+	return std::string("<" + user_ + "> : " + message);
+}
+
+std::string ChatInstance::addSystemToMessage(const std::string& message) {
+	return std::string("[System] : " + message);
+}
+
 //  loggers
-void ChatInstance::log(const std::string& message) {
-	messages_.push_back(message);
+void ChatInstance::log(const ELogType type, const std::string& message) {
+	messages_.push_back(logger_->log(type, message));
+}
+
+void ChatInstance::sysLog(const ELogType type, const std::string& message) {
+	log(type, addSystemToMessage(message));
+}
+
+void ChatInstance::logAndUpdate(const ELogType type, const std::string& message) {
+	messages_.push_back(logger_->log(type, message));
 	updateDisplay();
 }
 
-void ChatInstance::sys_log(const std::string& message) {
-	messages_.push_back("System: " + message);
-	if (instanceLoaded_)
-		updateDisplay();
+void ChatInstance::sysLogAndUpdate(const ELogType type, const std::string& message) {
+	logAndUpdate(type, addSystemToMessage(message));
+}
+
+void ChatInstance::quickLog(const ELogType type, const std::string& message) {
+	std::cout << logger_->log(type, message) << std::endl;
+}
+
+void ChatInstance::quickSysLog(const ELogType type, const std::string& message) {
+	quickLog(type, addSystemToMessage(message));
 }
 
 

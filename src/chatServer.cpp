@@ -23,7 +23,6 @@ void ChatInstance::startSocket() {
 	bindSocket();
 	listenConnections();
 	acceptConnections();
-	instanceLoaded_ = true;
 
 	//  instance
 	showInstance();
@@ -83,11 +82,11 @@ void ChatInstance::showInstance() {
 //  private
 //  socket methods
 void ChatInstance::createSocket() {
-	sys_log("Server socket setup..");
+	sysLog(INFO, "Server socket setup..");
 
 	sockFileDescriptor_ = socket(AF_INET, SOCK_STREAM, 0);
 	if (sockFileDescriptor_ < 0) {
-		std::cout << "Socket creation failed!\n";
+		quickSysLog(ERROR, "Socket creation failed!");
 		closeSocket();
 		exit(EXIT_FAILURE);
 	}
@@ -100,23 +99,23 @@ void ChatInstance::bindSocket() {
 
 	auto result = bind(sockFileDescriptor_, (struct sockaddr*)&serverSocketAddress_, sizeof(serverSocketAddress_));
 	if (result < 0) {
-		std::cout << "Bind failed!\n";
+		quickSysLog(ERROR, "Bind failed!");
 		closeSocket();
 		exit(EXIT_FAILURE);
 	}
 
-	sys_log("Socket initialized successfully!");
-	sys_log(
-	    std::string("Address: ") + inet_ntoa(serverSocketAddress_.sin_addr) +
-	    "\tPort: " + std::to_string(ntohs(serverSocketAddress_.sin_port))
+	sysLog(INFO, "Socket initialized successfully!");
+	sysLog(INFO,
+	   	std::string("Address: ") + inet_ntoa(serverSocketAddress_.sin_addr) +
+    	"\tPort: " + std::to_string(ntohs(serverSocketAddress_.sin_port))
 	);
-	sys_log("User \'" + user_ + "\' logged in");
+	sysLog(INFO, "User \'" + user_ + "\' logged in");
 }
 
 void ChatInstance::listenConnections() {
 	auto result = listen(sockFileDescriptor_, MAXCONNECTIONS);
 	if (result < 0) {
-		std::cout << "Listen failed!\n";
+		quickSysLog(ERROR, "Listen failed!");
 		closeSocket();
 		exit(EXIT_FAILURE);
 	}
@@ -136,10 +135,10 @@ void ChatInstance::connectionAccepter() {
 		return;
 
 	if (clientFileDescriptor < 0) {
-		std::cout << "Connection failed!\n";
+		quickSysLog(ERROR, "Connection failed!");
 	}
 	else {
-		sys_log("Connection accepted! File descriptor: " + std::to_string(clientFileDescriptor));
+		sysLogAndUpdate(INFO, "Connection accepted! File descriptor: " + std::to_string(clientFileDescriptor));
 
 		connections_.push_back(clientFileDescriptor);
 
@@ -151,7 +150,7 @@ void ChatInstance::connectionAccepter() {
 }
 
 void ChatInstance::disconnectClient(const int connection) {
-	sys_log("Socket disconnected. File Descriptor: " + std::to_string(connection));
+	sysLogAndUpdate(INFO, "Socket disconnected. File Descriptor: " + std::to_string(connection));
 
 	close(connection);
 	connections_.erase(
@@ -173,13 +172,13 @@ void ChatInstance::inputMessage() {
 	if (message[0] == '/') {
 		if (runCommand(message))
 			return;
-		sys_log("Invalid message or command!");
+		sysLog(WARNING, "Invalid message or command!");
 		return;
 	}
 
-	messages_.push_back(user_ + ": " + message);
+	log(NONE, addUserToMessage(message));
 	if (!connections_.empty())
-		sendMessage(user_ + ": " + message);
+		sendMessage(addUserToMessage(message));
 }
 
 void ChatInstance::sendMessage(const std::string &message) {
@@ -201,7 +200,7 @@ void ChatInstance::receiveMessage(const int connection) {
 	}
 
 	mutex_.lock();
-	log(buffer);
+	logAndUpdate(NONE, buffer);
 	mutex_.unlock();
 
 	sendMessage(buffer);
@@ -257,21 +256,43 @@ void ChatInstance::clearScreen() {
 
 void ChatInstance::convertAddress(const std::string &address) {
 	if (inet_pton(AF_INET, address.c_str(), &address_) <= 0) {
-		std::cout << "System: Invalid address/ Address not supported!\n";
+		quickSysLog(ERROR, "Invalid address/ Address not supported!");
 		exit(EXIT_FAILURE);
 	}
 }
 
+std::string ChatInstance::addUserToMessage(const std::string& message) {
+	return std::string("<" + user_ + "> : " + message);
+}
+
+std::string ChatInstance::addSystemToMessage(const std::string& message) {
+	return std::string("[System] : " + message);
+}
+
 //  loggers
-void ChatInstance::log(const std::string& message) {
-	messages_.push_back(message);
+void ChatInstance::log(const ELogType type, const std::string& message) {
+	messages_.push_back(logger_->log(type, message));
+}
+
+void ChatInstance::sysLog(const ELogType type, const std::string& message) {
+	log(type, addSystemToMessage(message));
+}
+
+void ChatInstance::logAndUpdate(const ELogType type, const std::string& message) {
+	messages_.push_back(logger_->log(type, message));
 	updateDisplay();
 }
 
-void ChatInstance::sys_log(const std::string& message) {
-	messages_.push_back("System: " + message);
-	if (instanceLoaded_)
-		updateDisplay();
+void ChatInstance::sysLogAndUpdate(const ELogType type, const std::string& message) {
+	logAndUpdate(type, addSystemToMessage(message));
+}
+
+void ChatInstance::quickLog(const ELogType type, const std::string& message) {
+	std::cout << logger_->log(type, message) << std::endl;
+}
+
+void ChatInstance::quickSysLog(const ELogType type, const std::string& message) {
+	quickLog(type, addSystemToMessage(message));
 }
 
 

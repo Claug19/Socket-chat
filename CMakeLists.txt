@@ -19,10 +19,8 @@ target_compile_options(gtest PRIVATE -Wno-psabi) # -Wno-psabi skips gcc compiler
 
 ################ Executable
 include_directories(${CMAKE_SOURCE_DIR}/src)
-add_executable(SChat
-  test/serverTest.cpp
-  test/clientTest.cpp
-)
+file(GLOB tests "test/*.cpp")
+add_executable(SChat ${tests})
 target_compile_options(SChat PRIVATE -Wall -Wextra)
 target_link_libraries(SChat GTest::gtest_main )
 
