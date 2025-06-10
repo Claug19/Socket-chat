@@ -54,8 +54,8 @@ Ensure you have GCC/make installed on your system: `sudo apt-get install build-e
 - [IETF RFC9293 TCP](https://datatracker.ietf.org/doc/html/rfc9293)
 
 ## **Further improvements**
-
-- create a configuration file to setup default ports and number of connections
+- <code>(DONE)</code> create a configuration file to setup default ports and number of connections.
+- <code>(DONE)</code> create logger class to save outputs of instances.
 - make client socket reusable
 - make server take the IP address of the current machine (hardcoded at the moment)
 - project built on Linux socket so it needs a safe port to Windows
