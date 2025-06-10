@@ -1,10 +1,5 @@
 #include "chatServer.hpp"
-
-#define SERVERPORT 8080
-#define SERVERADDRESS "192.168.25.164"
-#define EMPTYLNS 50
-#define MAXCONNECTIONS 5
-#define MAXBUFFERSIZE 1024
+#include <cstring>
 
 //  public
 //  socket methods
@@ -42,7 +37,7 @@ void ChatInstance::setPort() {
 	std::string portString;
 	std::getline(std::cin, portString);
 	if (portString.empty()) {
-		port_ = SERVERPORT;
+		port_ = config_->getAsInt("SERVERPORT");
 		return;
 	}
 
@@ -55,10 +50,9 @@ void ChatInstance::setAddress() {
 	std::string addressString;
 	std::getline(std::cin, addressString);
 	if (addressString.empty()) {
-		convertAddress(SERVERADDRESS);
+		convertAddress(config_->get("SERVERADDRESS"));
 		return;
 	}
-
 	convertAddress(addressString);
 }
 
@@ -82,11 +76,11 @@ void ChatInstance::showInstance() {
 //  private
 //  socket methods
 void ChatInstance::createSocket() {
-	sysLog(INFO, "Server socket setup..");
+	sysLog(ELogType::INFO, "Server socket setup..");
 
 	sockFileDescriptor_ = socket(AF_INET, SOCK_STREAM, 0);
 	if (sockFileDescriptor_ < 0) {
-		quickSysLog(ERROR, "Socket creation failed!");
+		quickSysLog(ELogType::ERROR, "Socket creation failed!");
 		closeSocket();
 		exit(EXIT_FAILURE);
 	}
@@ -99,23 +93,23 @@ void ChatInstance::bindSocket() {
 
 	auto result = bind(sockFileDescriptor_, (struct sockaddr*)&serverSocketAddress_, sizeof(serverSocketAddress_));
 	if (result < 0) {
-		quickSysLog(ERROR, "Bind failed!");
+		quickSysLog(ELogType::ERROR, "Bind failed!");
 		closeSocket();
 		exit(EXIT_FAILURE);
 	}
 
-	sysLog(INFO, "Socket initialized successfully!");
-	sysLog(INFO,
+	sysLog(ELogType::INFO, "Socket initialized successfully!");
+	sysLog(ELogType::INFO,
 	   	std::string("Address: ") + inet_ntoa(serverSocketAddress_.sin_addr) +
     	"\tPort: " + std::to_string(ntohs(serverSocketAddress_.sin_port))
 	);
-	sysLog(INFO, "User \'" + user_ + "\' logged in");
+	sysLog(ELogType::INFO, "User \'" + user_ + "\' logged in");
 }
 
 void ChatInstance::listenConnections() {
-	auto result = listen(sockFileDescriptor_, MAXCONNECTIONS);
+	auto result = listen(sockFileDescriptor_, config_->getAsInt("MAXCONNECTIONS"));
 	if (result < 0) {
-		quickSysLog(ERROR, "Listen failed!");
+		quickSysLog(ELogType::ERROR, "Listen failed!");
 		closeSocket();
 		exit(EXIT_FAILURE);
 	}
@@ -135,10 +129,11 @@ void ChatInstance::connectionAccepter() {
 		return;
 
 	if (clientFileDescriptor < 0) {
-		quickSysLog(ERROR, "Connection failed!");
+		quickSysLog(ELogType::ERROR, "Connection failed!");
 	}
 	else {
-		sysLogAndUpdate(INFO, "Connection accepted! File descriptor: " + std::to_string(clientFileDescriptor));
+		sysLogAndUpdate(ELogType::INFO,
+			"Connection accepted! File descriptor: " + std::to_string(clientFileDescriptor));
 
 		connections_.push_back(clientFileDescriptor);
 
@@ -150,7 +145,7 @@ void ChatInstance::connectionAccepter() {
 }
 
 void ChatInstance::disconnectClient(const int connection) {
-	sysLogAndUpdate(INFO, "Socket disconnected. File Descriptor: " + std::to_string(connection));
+	sysLogAndUpdate(ELogType::INFO, "Socket disconnected. File Descriptor: " + std::to_string(connection));
 
 	close(connection);
 	connections_.erase(
@@ -172,7 +167,7 @@ void ChatInstance::inputMessage() {
 	if (message[0] == '/') {
 		if (runCommand(message))
 			return;
-		sysLog(WARNING, "Invalid message or command!");
+		sysLog(ELogType::WARNING, "Invalid message or command!");
 		return;
 	}
 
@@ -183,12 +178,12 @@ void ChatInstance::inputMessage() {
 
 void ChatInstance::sendMessage(const std::string &message) {
 	for (auto connection : connections_)
-		send(connection, message.c_str(), MAXBUFFERSIZE, 0);
+		send(connection, message.c_str(), config_->getAsInt("MAXBUFFERSIZE"), 0);
 }
 
 void ChatInstance::receiveMessage(const int connection) {
-	char buffer[MAXBUFFERSIZE] = { 0 };
-	auto result = recv(connection, buffer, MAXBUFFERSIZE, 0);
+	char buffer[config_->getAsInt("MAXBUFFERSIZE")] = { 0 };
+	auto result = recv(connection, buffer, config_->getAsInt("MAXBUFFERSIZE"), 0);
 
 	//  causes the thread to terminate early without executing further
 	if (exitFlag_)
@@ -226,7 +221,7 @@ void ChatInstance::display() {
 		std::cout << message << std::endl;
 
 	//  empty space between message stack and input
-	for (auto emptyLn = 0u; emptyLn < (EMPTYLNS - messages_.size()); emptyLn++)
+	for (auto emptyLn = 0u; emptyLn < (config_->getAsInt("EMPTYLNS") - messages_.size()); emptyLn++)
 		std::cout << std::endl;
 }
 
@@ -235,14 +230,14 @@ void ChatInstance::updateDisplay() {
 	std::cout << "\x1b[1A";
 
 	//  ANSI up and delete until last message
-	for (auto upLine = 0u; upLine < (EMPTYLNS - messages_.size() + 1); upLine++)
+	for (auto upLine = 0u; upLine < (config_->getAsInt("EMPTYLNS") - messages_.size() + 1); upLine++)
 		std::cout << "\x1b[1A" << "\x1b[2K";
 
 	//  output new message
 	std::cout << "\r" << messages_.back() << std::endl;
 
 	//  create new lines until original position
-	for (auto emptyLn = 0u; emptyLn < (EMPTYLNS - messages_.size() + 1); emptyLn++)
+	for (auto emptyLn = 0u; emptyLn < (config_->getAsInt("EMPTYLNS") - messages_.size() + 1); emptyLn++)
 		std::cout << std::endl;
 }
 
@@ -256,7 +251,7 @@ void ChatInstance::clearScreen() {
 
 void ChatInstance::convertAddress(const std::string &address) {
 	if (inet_pton(AF_INET, address.c_str(), &address_) <= 0) {
-		quickSysLog(ERROR, "Invalid address/ Address not supported!");
+		quickSysLog(ELogType::ERROR, "Invalid address/ Address not supported!");
 		exit(EXIT_FAILURE);
 	}
 }

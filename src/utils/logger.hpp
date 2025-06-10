@@ -12,6 +12,8 @@
 #include <memory>
 #include <string>
 
+#include "getConfig.hpp"
+
 enum ELogType {
     NONE,
     INFO,
@@ -20,6 +22,10 @@ enum ELogType {
     ERROR
 };
 
+namespace utils {
+
+//  Logger class is a general purpose logger
+//  Suports debug mode
 class Logger {
 public:
     static Logger* getLogger(const std::string& name = "") {
@@ -80,11 +86,13 @@ public:
 
 private:
     Logger(const std::string& name = "") {
+        ConfigPtr config = utils::Config::getConfig();
+
         std::time_t initialTime = toTimeT();
         char formatedTime[100];
         strftime(formatedTime, 100, "%d-%m-%Y_%H-%M-%S", std::localtime(&initialTime));
 
-        logName_ = "logs/" + std::string(formatedTime);
+        logName_ = config->get("LOGPATH") + std::string(formatedTime);
         logName_ += name.empty()? ".txt" : "-" + name + ".txt";
     }
     ~Logger() = default;
@@ -94,14 +102,13 @@ private:
         return std::chrono::system_clock::to_time_t(now);
     }
 
-    std::string logName_;
     static Logger* logger_;
+    static std::string logName_;
     static bool debugFlag_;
 };
-
-Logger* Logger::logger_ = nullptr;
-bool Logger::debugFlag_ = false;
-
 using LoggerPtr = Logger*;
+using LoggerCPtr = const Logger*;
+
+} //  namespace utils
 
 #endif //  #ifndef UTILS_LOGGER_HPP

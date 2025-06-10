@@ -6,8 +6,12 @@ TESTINGPATH = Testing
 SOURCEPATH = .
 LOGPATH = logs
 
+REQUIREDFILES = \
+	src/utils/getConfig.cpp \
+	src/utils/logger.cpp
+
 define build
-	$(CXX) $(CXXFLAGS) src/$(1).cpp -o $(BINPATH)/$(1)
+	$(CXX) $(CXXFLAGS) src/$(1).cpp $(REQUIREDFILES) -o $(BINPATH)/$(1)
 endef
 
 define run

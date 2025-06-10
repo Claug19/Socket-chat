@@ -21,7 +21,8 @@
 class ChatInstance {
 public:
 	ChatInstance() {
-		logger_ = Logger::getLogger(std::string("Client"));
+		logger_ = utils::Logger::getLogger(std::string("Client"));
+		config_ = utils::Config::getConfig();
 	}
 
 	//  socket methods
@@ -77,7 +78,8 @@ private:
 	std::string user_;
 	std::vector<std::string> messages_;
 	std::mutex mutex_;
-	LoggerPtr logger_;
+	utils::LoggerPtr logger_;
+	utils::ConfigPtr config_;
 };
 
 #endif //  #ifndef SOCKETCHAT_CHAT_CLIENT_HPP

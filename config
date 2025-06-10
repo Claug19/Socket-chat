@@ -1,0 +1,10 @@
+# this is a commented line
+# config file supports spacing and double qoutes (for special characters)
+# in code you can retrive variables bellow using get(<key>) or set with set(<key>)
+
+EMPTYLNS = 50
+LOGPATH = "logs/"
+MAXBUFFERSIZE = 1024
+MAXCONNECTIONS = 5
+SERVERADDRESS = "192.168.25.164"
+SERVERPORT = 8080
