@@ -16,14 +16,15 @@
 #include <netinet/in.h>
 #include <sys/socket.h>
 
+#include "utils/getConfig.hpp"
 #include "utils/logger.hpp"
 
 class ChatInstance {
 public:
-	ChatInstance() {
-		logger_ = utils::Logger::getLogger(std::string("Client"));
-		config_ = utils::Config::getConfig();
-	}
+	ChatInstance() :
+		logger_(utils::Logger::getLogger(std::string("Client"))),
+		config_(utils::Config::getConfig())
+	{}
 
 	//  socket methods
 	void startSocket();

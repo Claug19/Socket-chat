@@ -1,5 +1,4 @@
 #include "chatServer.hpp"
-#include <cstring>
 
 //  public
 //  socket methods

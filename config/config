@@ -3,8 +3,7 @@
 # in code you can retrive variables bellow using get(<key>) or set with set(<key>)
 
 EMPTYLNS = 50
-LOGPATH = "logs/"
 MAXBUFFERSIZE = 1024
 MAXCONNECTIONS = 5
 SERVERADDRESS = "192.168.25.164"
-SERVERPORT = 8080
+SERVERPORT = 8080config
