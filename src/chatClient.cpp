@@ -2,7 +2,7 @@
 
 //  public
 //  socket methods
-void ChatInstance::startSocket() {
+void ChatClient::startSocket() {
 	//  clean display
 	clearScreen();
 	std::cout << "SOCKET BASED CHAT\n\n";
@@ -21,46 +21,60 @@ void ChatInstance::startSocket() {
 	showInstance();
 }
 
-void ChatInstance::closeSocket() {
+void ChatClient::closeSocket() {
 	close(sockFileDescriptor_);
 	exitFlag_ = true;
 }
 
 //  chat methods
-void ChatInstance::setPort() {
+void ChatClient::setPort() {
 	std::cout << "Custom port (leave blank for default): ";
 
 	std::string portString;
 	std::getline(std::cin, portString);
+
 	if (portString.empty()) {
 		serverPort_ = config_->getAsInt("SERVERPORT");
+		return;
+	}
+
+	if (!isInteger(portString)) {
+		std::cout << "Invalid port provided. Retrying..\n";
+		setPort();
 		return;
 	}
 
 	serverPort_ = std::stoi(portString);
 }
 
-void ChatInstance::setAddress() {
+void ChatClient::setAddress() {
 	std::cout << "Custom address (leave blank for default): ";
 
 	std::string addressString;
 	std::getline(std::cin, addressString);
+
 	if (addressString.empty()) {
 		convertAddress(config_->get("SERVERADDRESS"));
+		return;
+	}
+
+	if (!isAddress(addressString)) {
+		std::cout << "Invalid address provided. Retrying..\n";
+		setAddress();
 		return;
 	}
 
 	convertAddress(addressString);
 }
 
-void ChatInstance::setUser() {
+void ChatClient::setUser() {
 	std::cout << "Set user: ";
 
 	while (user_.empty())
 		std::cin >> user_;
 }
 
-void ChatInstance::showInstance() {
+void ChatClient::showInstance() {
 	//  display instance interface
 	if (exitFlag_)
 		return;
@@ -73,7 +87,7 @@ void ChatInstance::showInstance() {
 
 //  private
 //  socket methods
-void ChatInstance::createSocket() {
+void ChatClient::createSocket() {
 	sysLog(ELogType::INFO, "Client socket setup..");
 
 	sockFileDescriptor_ = socket(AF_INET, SOCK_STREAM, 0);
@@ -84,7 +98,7 @@ void ChatInstance::createSocket() {
 	}
 }
 
-void ChatInstance::connectSocket() {
+void ChatClient::connectSocket() {
 	serverSocketAddress_.sin_family = AF_INET;
 	serverSocketAddress_.sin_port = htons(serverPort_);
 	serverSocketAddress_.sin_addr.s_addr = serverAddress_;
@@ -106,13 +120,13 @@ void ChatInstance::connectSocket() {
 	sendMessage(userLogin);
 }
 
-void ChatInstance::connectionAccepter() {
+void ChatClient::connectionAccepter() {
 	//  starts a listener thread for the connection
-	std::thread connectionThread(&ChatInstance::receiveMessage, this);
+	std::thread connectionThread(&ChatClient::receiveMessage, this);
 	connectionThread.detach();
 }
 
-void ChatInstance::disconnectSocket() {
+void ChatClient::disconnectSocket() {
 	closeSocket();
 	clearScreen();
 	quickSysLog(ELogType::INFO, "Server socket disconnected.");
@@ -120,7 +134,7 @@ void ChatInstance::disconnectSocket() {
 }
 
 //  chat message
-void ChatInstance::inputMessage() {
+void ChatClient::inputMessage() {
 	std::cout << "MESSAGE:\n";
 
 	std::string message;
@@ -138,11 +152,11 @@ void ChatInstance::inputMessage() {
 	sendMessage(addUserToMessage(message));
 }
 
-void ChatInstance::sendMessage(const std::string &message) {
+void ChatClient::sendMessage(const std::string &message) {
 	send(sockFileDescriptor_, message.c_str(), config_->getAsInt("MAXBUFFERSIZE"), 0);
 }
 
-void ChatInstance::receiveMessage() {
+void ChatClient::receiveMessage() {
 	char buffer[config_->getAsInt("MAXBUFFERSIZE")] = { 0 };
 	auto result = recv(sockFileDescriptor_, buffer, config_->getAsInt("MAXBUFFERSIZE"), 0);
 
@@ -162,7 +176,7 @@ void ChatInstance::receiveMessage() {
 	receiveMessage();
 }
 
-bool ChatInstance::runCommand(const std::string &message) {
+bool ChatClient::runCommand(const std::string &message) {
 	//  executes slash commands
 	if (message == "/exit") {
 		sendMessage(addSystemToMessage("User \'" + user_ + "\' logged out"));
@@ -174,7 +188,7 @@ bool ChatInstance::runCommand(const std::string &message) {
 }
 
 //  utility
-void ChatInstance::display() {
+void ChatClient::display() {
 	//  clear screen, display messages
 	clearScreen();
 	std::cout << "CHAT:\n\n";
@@ -188,7 +202,7 @@ void ChatInstance::display() {
 	}
 }
 
-void ChatInstance::updateDisplay() {
+void ChatClient::updateDisplay() {
 	//  ANSI up one line to keep input prompt
 	std::cout << "\x1b[1A";
 
@@ -204,7 +218,7 @@ void ChatInstance::updateDisplay() {
 		std::cout << std::endl;
 }
 
-void ChatInstance::clearScreen() {
+void ChatClient::clearScreen() {
 #ifdef WINDOWS
 	std::system("cls");
 #else
@@ -212,50 +226,78 @@ void ChatInstance::clearScreen() {
 #endif
 }
 
-void ChatInstance::convertAddress(const std::string &address) {
+bool ChatClient::isInteger(const std::string& input) {
+	for (auto character : input) {
+		if (!std::isdigit(character))
+			return false;
+	}
+	return true;
+}
+
+bool ChatClient::isAddress(const std::string& input) {
+	for (auto character : input) {
+		if (!(std::isdigit(character) || character == '.'))
+			return false;
+	}
+	return true;
+}
+
+void ChatClient::convertAddress(const std::string &address) {
 	if (inet_pton(AF_INET, address.c_str(), &serverAddress_) <= 0) {
 		quickSysLog(ELogType::INFO, "Invalid address/ Address not supported!");
 		exit(EXIT_FAILURE);
 	}
 }
 
-std::string ChatInstance::addUserToMessage(const std::string& message) {
+std::string ChatClient::addUserToMessage(const std::string& message) {
 	return std::string("<" + user_ + "> : " + message);
 }
 
-std::string ChatInstance::addSystemToMessage(const std::string& message) {
+std::string ChatClient::addSystemToMessage(const std::string& message) {
 	return std::string("[System] : " + message);
 }
 
 //  loggers
-void ChatInstance::log(const ELogType type, const std::string& message) {
+void ChatClient::log(const ELogType type, const std::string& message) {
 	messages_.push_back(logger_->log(type, message));
 }
 
-void ChatInstance::sysLog(const ELogType type, const std::string& message) {
+void ChatClient::sysLog(const ELogType type, const std::string& message) {
 	log(type, addSystemToMessage(message));
 }
 
-void ChatInstance::logAndUpdate(const ELogType type, const std::string& message) {
+void ChatClient::logAndUpdate(const ELogType type, const std::string& message) {
 	messages_.push_back(logger_->log(type, message));
 	updateDisplay();
 }
 
-void ChatInstance::sysLogAndUpdate(const ELogType type, const std::string& message) {
+void ChatClient::sysLogAndUpdate(const ELogType type, const std::string& message) {
 	logAndUpdate(type, addSystemToMessage(message));
 }
 
-void ChatInstance::quickLog(const ELogType type, const std::string& message) {
+void ChatClient::quickLog(const ELogType type, const std::string& message) {
 	std::cout << logger_->log(type, message) << std::endl;
 }
 
-void ChatInstance::quickSysLog(const ELogType type, const std::string& message) {
+void ChatClient::quickSysLog(const ELogType type, const std::string& message) {
 	quickLog(type, addSystemToMessage(message));
 }
 
+// getters
+unsigned short ChatClient::getPort() {
+	return serverPort_;
+}
+
+unsigned long ChatClient::getAddress() {
+	return serverAddress_;
+}
+
+std::string ChatClient::getUser() {
+	return user_;
+}
 
 int main() {
-	std::unique_ptr<ChatInstance> client = std::make_unique<ChatInstance>();
+	std::unique_ptr<ChatClient> client = std::make_unique<ChatClient>();
 	client->startSocket();
 	return 0;
 }

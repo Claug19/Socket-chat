@@ -19,9 +19,9 @@
 #include "utils/getConfig.hpp"
 #include "utils/logger.hpp"
 
-class ChatInstance {
+class ChatClient {
 public:
-	ChatInstance() :
+	ChatClient() :
 		logger_(utils::Logger::getLogger(std::string("Client"))),
 		config_(utils::Config::getConfig())
 	{}
@@ -52,6 +52,8 @@ private:
 	void display();
 	void updateDisplay();
 	void clearScreen();
+	bool isInteger(const std::string& input);
+	bool isAddress(const std::string& input);
 	void convertAddress(const std::string &address);
 	std::string addUserToMessage(const std::string& message);
 	std::string addSystemToMessage(const std::string& message);
@@ -63,6 +65,11 @@ private:
 	void sysLogAndUpdate(const ELogType type, const std::string& message);
 	void quickLog(const ELogType type, const std::string& message);
 	void quickSysLog(const ELogType type, const std::string& message);
+
+	// getters
+	unsigned short getPort();
+	unsigned long getAddress();
+	std::string getUser();
 
 	//  flags
 	bool exitFlag_ = false;

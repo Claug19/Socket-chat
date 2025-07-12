@@ -46,9 +46,10 @@ file(GLOB additional_files "${CMAKE_SOURCE_DIR}/src/utils/*.cpp")
 ######## EXECUTABLES ########
 
 #### TEST EXECUTABLE ####
-file(GLOB tests "./*.cpp")
+file(GLOB tests "unitTests/*.cpp")
+file(GLOB utilsTests "unitTests/utils/*.cpp")
 
-add_executable(unit_tests ${tests} ${additional_files})
+add_executable(unit_tests ${tests} ${utilsTests} ${additional_files})
 target_link_libraries(unit_tests GTest::gtest_main)
 
 gtest_discover_tests(unit_tests)

@@ -7,7 +7,6 @@ CONFIGPATH = config
 INCLUDEPATH = include
 LOGPATH = logs
 UTILSPATH = src/utils
-TESTINGPATH = Testing
 
 
 #### COMPILER CONFIG ####
@@ -114,4 +113,3 @@ createBin:
 clean:
 	rm -rf $(BINPATH)
 	rm -rf $(BUILDPATH)
-	rm -rf $(TESTINGPATH)

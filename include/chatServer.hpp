@@ -20,9 +20,9 @@
 #include "utils/getConfig.hpp"
 #include "utils/logger.hpp"
 
-class ChatInstance {
+class ChatServer {
 public:
-	ChatInstance() :
+	ChatServer() :
 		logger_(utils::Logger::getLogger(std::string("Server"))),
 		config_(utils::Config::getConfig())
 	{}
